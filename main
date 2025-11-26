@@ -1,1 +1,112 @@
+#!/usr/bin/env python3
+"""
+智能记账应用主程序
+"""
 
+import json
+import os
+from datetime import datetime
+
+class AccountingApp:
+    def __init__(self):
+        self.data_file = "accounting_data.json"
+        self.records = self.load_data()
+        
+        # 消费分类字典
+        self.categories = {
+            'food': ['餐饮', '外卖', '零食', '超市', '水果'],
+            'transport': ['公交', '地铁', '打车', '火车', '机票'],
+            'entertainment': ['电影', '游戏', '旅游', 'KTV', '购物'],
+            'education': ['书籍', '课程', '培训'],
+            'other': ['其他']
+        }
+    
+    def load_data(self):
+        """加载数据"""
+        if os.path.exists(self.data_file):
+            with open(self.data_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
+    
+    def save_data(self):
+        """保存数据"""
+        with open(self.data_file, 'w', encoding='utf-8') as f:
+            json.dump(self.records, f, ensure_ascii=False, indent=2)
+    
+    def add_record(self, amount, description, category=None):
+        """添加记账记录"""
+        if category is None:
+            category = self.auto_categorize(description)
+        
+        record = {
+            'id': len(self.records) + 1,
+            'amount': float(amount),
+            'description': description,
+            'category': category,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        self.records.append(record)
+        self.save_data()
+        print(f"✅ 记录添加成功: {record}")
+        return record
+    
+    def auto_categorize(self, description):
+        """自动分类"""
+        for category, keywords in self.categories.items():
+            if any(keyword in description for keyword in keywords):
+                return category
+        return 'other'
+    
+    def show_summary(self):
+        """显示汇总"""
+        if not self.records:
+            print("暂无记账记录")
+            return
+        
+        total = sum(record['amount'] for record in self.records)
+        print(f"\n📊 记账汇总")
+        print(f"总记录数: {len(self.records)}")
+        print(f"总金额: {total:.2f}元")
+        
+        # 按类别汇总
+        category_sum = {}
+        for record in self.records:
+            cat = record['category']
+            category_sum[cat] = category_sum.get(cat, 0) + record['amount']
+        
+        print("\n📈 分类统计:")
+        for cat, amount in category_sum.items():
+            print(f"  {cat}: {amount:.2f}元")
+
+def main():
+    app = AccountingApp()
+    
+    while True:
+        print("\n💎 智能记账应用")
+        print("1. 添加记录")
+        print("2. 查看汇总") 
+        print("3. 退出")
+        
+        choice = input("请选择操作 (1-3): ").strip()
+        
+        if choice == '1':
+            try:
+                amount = input("输入金额: ")
+                description = input("输入描述: ")
+                app.add_record(amount, description)
+            except ValueError:
+                print("❌ 金额格式错误!")
+        
+        elif choice == '2':
+            app.show_summary()
+        
+        elif choice == '3':
+            print("再见! 👋")
+            break
+        
+        else:
+            print("❌ 无效选择")
+
+if __name__ == "__main__":
+    main()
